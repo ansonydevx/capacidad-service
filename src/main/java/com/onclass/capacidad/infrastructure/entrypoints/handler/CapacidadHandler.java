@@ -4,6 +4,7 @@ import com.onclass.capacidad.domain.api.CapacidadServicePort;
 import com.onclass.capacidad.domain.enums.TechnicalMessage;
 import com.onclass.capacidad.domain.model.Capacidad;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadDTO;
+import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadListado;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -28,5 +29,18 @@ public class CapacidadHandler {
                 .flatMap(c -> ServerResponse
                         .status(HttpStatus.CREATED)
                         .bodyValue(TechnicalMessage.TECNOLOGIA_CREADA.getMessage()));
+    }
+
+    public Mono<ServerResponse> listar(ServerRequest request) {
+        int page = Integer.parseInt(request.queryParam("page").orElse("0"));
+        int size = Integer.parseInt(request.queryParam("size").orElse("10"));
+        String sortBy = request.queryParam("sortBy").orElse("nombre");
+        String direction = request.queryParam("direction").orElse("asc");
+
+        return ServerResponse.ok()
+                .body(
+                        capacidadServicePort.listar(page, size, sortBy, direction),
+                        CapacidadListado.class
+                );
     }
 }

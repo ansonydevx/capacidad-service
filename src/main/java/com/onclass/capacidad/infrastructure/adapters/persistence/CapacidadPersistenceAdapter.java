@@ -33,4 +33,21 @@ public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
                                 .then(Mono.just(
                                         new Capacidad(saved.getId(), saved.getNombre(), saved.getDescripcion(), capacidad.tecnologiaIds()))));
     }
+
+    @Override
+    public Flux<Capacidad> findAll(int page, int size) {
+        long offset = (long) page * size;
+
+        return capacidadRepository.findAllPaged(size, offset)
+                        .flatMap(entity ->
+                                capacidadTecnologiaRepository.findByCapacidadId(entity.getId())
+                                        .map(CapacidadTecnologiaEntity::getTecnologiaId)
+                                        .collectList()
+                                        .map(ids -> new Capacidad(
+                                                entity.getId(),
+                                                entity.getNombre(),
+                                                entity.getDescripcion(),
+                                                ids
+                                        )));
+    }
 }
