@@ -1,6 +1,10 @@
 server:
   port: 8082
 
+services:
+  tecnologias:
+    base-url: http://localhost:8081
+
 spring:
   name: capacidad-service
   r2dbc:
