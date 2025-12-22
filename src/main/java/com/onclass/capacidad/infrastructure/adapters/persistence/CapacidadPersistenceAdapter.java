@@ -9,12 +9,19 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
 
     private final CapacidadRepository capacidadRepository;
     private final CapacidadTecnologiaRepository capacidadTecnologiaRepository;
     private final CapacidadEntityMapper mapper;
+
+    @Override
+    public Mono<Long> countByIds(List<Long> ids) {
+        return capacidadRepository.countByIdIn(ids);
+    }
 
     @Override
     public Mono<Boolean> existsByNombre(String nombre) {

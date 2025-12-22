@@ -47,6 +47,12 @@ public class CapacidadUseCase implements CapacidadServicePort {
                 ));
     }
 
+    @Override
+    public Mono<Boolean> existenPorIds(List<Long> ids) {
+        return persistencePort.countByIds(ids)
+                .map(count -> count == ids.size());
+    }
+
     public Flux<CapacidadListado> listar(int page, int size, String sortBy, String direction) {
         return persistencePort.findAll(page, size)
                 .collectList()

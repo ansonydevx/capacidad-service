@@ -1,4 +1,4 @@
-package com.onclass.capacidad.config;
+package com.onclass.capacidad.application.config;
 
 import com.onclass.capacidad.domain.api.CapacidadServicePort;
 import com.onclass.capacidad.domain.spi.CapacidadPersistencePort;

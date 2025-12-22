@@ -14,9 +14,10 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 public class CapacidadRouter {
 
     @Bean
-    public RouterFunction<ServerResponse> tecnologiaRoutes(
+    public RouterFunction<ServerResponse> capacidadRoutes(
             CapacidadHandler handler) {
         return route(POST("/capacidades"), handler::registrar)
-                .andRoute(GET("/capacidades"), handler::listar);
+                .andRoute(GET("/capacidades"), handler::listar)
+                .andRoute(POST("/capacidades/exists"), handler::existen);
     }
 }

@@ -5,9 +5,12 @@ import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadListado;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 public interface CapacidadServicePort {
     
     Mono<Capacidad> registrar(Capacidad tecnologia);
+    Mono<Boolean> existenPorIds(List<Long> ids);
     Flux<CapacidadListado> listar(
             int page,
             int size,
