@@ -53,6 +53,7 @@ public class CapacidadUseCase implements CapacidadServicePort {
                 .map(count -> count == ids.size());
     }
 
+    @Override
     public Flux<CapacidadListado> listar(int page, int size, String sortBy, String direction) {
         return persistencePort.findAll(page, size)
                 .collectList()
@@ -74,6 +75,33 @@ public class CapacidadUseCase implements CapacidadServicePort {
                         );
                     }
 
+                    List<Long> tecnologiaIds = capacidades.stream()
+                            .flatMap(c -> c.tecnologiaIds().stream())
+                            .distinct()
+                            .toList();
+
+                    return tecnologiaQueryPort.obtenerTecnologiasPorId(tecnologiaIds)
+                            .flatMapMany(tecnologiasMap ->
+                                    Flux.fromIterable(capacidades)
+                                            .map(capacidad ->
+                                                    new CapacidadListado(
+                                                            capacidad.id(),
+                                                            capacidad.nombre(),
+                                                            capacidad.tecnologiaIds().stream()
+                                                                    .map(id -> new TecnologiaResumen(
+                                                                            id,
+                                                                            tecnologiasMap.get(id)
+                                                                    ))
+                                                                    .toList()
+                                                    )));
+                });
+    }
+
+    @Override
+    public Flux<CapacidadListado> listarPorIds(List<Long> ids) {
+        return persistencePort.findByIds(ids)
+                .collectList()
+                .flatMapMany(capacidades -> {
                     List<Long> tecnologiaIds = capacidades.stream()
                             .flatMap(c -> c.tecnologiaIds().stream())
                             .distinct()
