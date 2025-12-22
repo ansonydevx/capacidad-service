@@ -18,6 +18,7 @@ public class CapacidadRouter {
             CapacidadHandler handler) {
         return route(POST("/capacidades"), handler::registrar)
                 .andRoute(GET("/capacidades"), handler::listar)
-                .andRoute(POST("/capacidades/exists"), handler::existen);
+                .andRoute(POST("/capacidades/exists"), handler::existen)
+                .andRoute(POST("/capacidades/by-ids"), handler::listarPorIds);
     }
 }

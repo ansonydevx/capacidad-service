@@ -57,4 +57,20 @@ public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
                                                 ids
                                         )));
     }
+
+    @Override
+    public Flux<Capacidad> findByIds(List<Long> ids) {
+        return capacidadRepository.findByIdIn(ids)
+                .flatMap(entity ->
+                        capacidadTecnologiaRepository.findByCapacidadId(entity.getId())
+                                .map(CapacidadTecnologiaEntity::getTecnologiaId)
+                                .collectList()
+                                .map(tecnologiaIds ->
+                                        new Capacidad(
+                                                entity.getId(),
+                                                entity.getNombre(),
+                                                entity.getDescripcion(),
+                                                tecnologiaIds
+                                        )));
+    }
 }

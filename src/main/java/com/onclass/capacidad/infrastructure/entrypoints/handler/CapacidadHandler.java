@@ -6,6 +6,7 @@ import com.onclass.capacidad.domain.model.Capacidad;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadDTO;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadExistsRequest;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadListado;
+import com.onclass.capacidad.infrastructure.entrypoints.dto.IdsRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Slf4j
 @Component
@@ -52,5 +55,13 @@ public class CapacidadHandler {
                         capacidadServicePort.listar(page, size, sortBy, direction),
                         CapacidadListado.class
                 );
+    }
+
+    public Mono<ServerResponse> listarPorIds(ServerRequest request) {
+        return request.bodyToMono(IdsRequest.class)
+                .flatMapMany(req -> capacidadServicePort.listarPorIds(req.ids()))
+                .collectList()
+                .flatMap(list ->
+                        ServerResponse.ok().bodyValue(list));
     }
 }
