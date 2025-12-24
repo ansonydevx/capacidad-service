@@ -17,7 +17,8 @@ public class TecnologiaWebClientAdapter implements TecnologiaQueryPort {
 
     @Override
     public Mono<Boolean> existenTecnologias(List<Long> tecnologiaIds) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri("/tecnologias/exists")
                 .bodyValue(new TecnologiaExistsRequest(tecnologiaIds))
                 .retrieve()

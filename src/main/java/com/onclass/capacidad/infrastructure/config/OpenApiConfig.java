@@ -9,11 +9,11 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI tecnologiaApi() {
+    public OpenAPI capacidadApi() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Tecnologia API")
-                        .description("Gestionar tecnologias")
+                        .title("Capacidad API")
+                        .description("Gestionar capacidades")
                         .version("1.0.0"));
     }
 }

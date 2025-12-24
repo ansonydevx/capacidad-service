@@ -17,5 +17,5 @@ public interface CapacidadServicePort {
             String sortBy,
             String direction
     );
-    Flux<CapacidadListado> listarPorIds(List<Long> ids);
+    Flux<CapacidadListado> obtenerPorIds(List<Long> ids);
 }

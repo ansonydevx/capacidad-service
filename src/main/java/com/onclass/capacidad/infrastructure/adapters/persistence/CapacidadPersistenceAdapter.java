@@ -9,7 +9,10 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
@@ -59,18 +62,37 @@ public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
     }
 
     @Override
-    public Flux<Capacidad> findByIds(List<Long> ids) {
-        return capacidadRepository.findByIdIn(ids)
-                .flatMap(entity ->
-                        capacidadTecnologiaRepository.findByCapacidadId(entity.getId())
-                                .map(CapacidadTecnologiaEntity::getTecnologiaId)
-                                .collectList()
-                                .map(tecnologiaIds ->
-                                        new Capacidad(
-                                                entity.getId(),
-                                                entity.getNombre(),
-                                                entity.getDescripcion(),
-                                                tecnologiaIds
-                                        )));
+    public Flux<Capacidad> findAllByIdIn(List<Long> ids) {
+        return capacidadRepository.findAllByIdIn(ids)
+                .collectList()
+                .flatMapMany(capacidades -> {
+                    if (capacidades.isEmpty()) {
+                        return Flux.empty();
+                    }
+
+                    List<Long> capacidadIds = capacidades.stream()
+                            .map(CapacidadEntity::getId)
+                            .toList();
+
+                    return capacidadTecnologiaRepository.findAllByCapacidadIdIn(capacidadIds)
+                            .collectMultimap(
+                                    CapacidadTecnologiaEntity::getCapacidadId,
+                                    CapacidadTecnologiaEntity::getTecnologiaId
+                            )
+                            .flatMapMany(relMap ->
+                                    Flux.fromIterable(capacidades)
+                                            .map(entity ->
+                                                    mapearCapacidad(entity, relMap)));
+                });
+    }
+
+    private Capacidad mapearCapacidad(CapacidadEntity entity, Map<Long, Collection<Long>> relMap) {
+        return new Capacidad(
+                entity.getId(),
+                entity.getNombre(),
+                entity.getDescripcion(),
+                new ArrayList<>(relMap.getOrDefault(entity.getId(), List.of())
+                )
+        );
     }
 }
