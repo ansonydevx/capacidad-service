@@ -11,6 +11,7 @@ import com.onclass.capacidad.infrastructure.entrypoints.dto.TecnologiaResumen;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
@@ -27,24 +28,9 @@ public class CapacidadUseCase implements CapacidadServicePort {
     @Override
     public Mono<Capacidad> registrar(Capacidad capacidad) {
         return validar(capacidad)
-                .then(Mono.defer(() ->
-                        persistencePort.existsByNombre(capacidad.nombre())
-                                .flatMap(exists -> {
-                                    if (Boolean.TRUE.equals(exists)) {
-                                        return Mono.error(
-                                                new BusinessException(TechnicalMessage.CAPACIDAD_DUPLICADA));
-                                    }
-                                    return tecnologiaQueryPort.existenTecnologias(
-                                            capacidad.tecnologiaIds());
-                                })
-                                .flatMap(existen -> {
-                                    if (Boolean.FALSE.equals(existen)) {
-                                        return Mono.error(new BusinessException(
-                                                TechnicalMessage.TECNOLOGIAS_NO_EXISTEN));
-                                    }
-                                    return persistencePort.save(capacidad);
-                                })
-                ));
+                .flatMap(this::verificarDuplicidad)
+                .flatMap(this::verificarTecnologiasExisten)
+                .flatMap(persistencePort::save);
     }
 
     @Override
@@ -58,85 +44,89 @@ public class CapacidadUseCase implements CapacidadServicePort {
         return persistencePort.findAll(page, size)
                 .collectList()
                 .flatMapMany(capacidades -> {
-                    if ("cantidad".equalsIgnoreCase(sortBy)) {
-                        capacidades.sort((c1, c2) -> {
-                            int compare = Integer.compare(
-                                    c1.tecnologiaIds().size(),
-                                    c2.tecnologiaIds().size()
-                            );
-                            return direction.equalsIgnoreCase("desc") ? -compare : compare;
-                        });
-                    }
-
-                    if ("nombre".equalsIgnoreCase(sortBy)
-                            && direction.equalsIgnoreCase("desc")) {
-                        capacidades.sort(
-                                (c1, c2) -> c2.nombre().compareToIgnoreCase(c1.nombre())
-                        );
-                    }
-
-                    List<Long> tecnologiaIds = capacidades.stream()
-                            .flatMap(c -> c.tecnologiaIds().stream())
-                            .distinct()
-                            .toList();
-
-                    return tecnologiaQueryPort.obtenerTecnologiasPorId(tecnologiaIds)
-                            .flatMapMany(tecnologiasMap ->
-                                    Flux.fromIterable(capacidades)
-                                            .map(capacidad ->
-                                                    new CapacidadListado(
-                                                            capacidad.id(),
-                                                            capacidad.nombre(),
-                                                            capacidad.tecnologiaIds().stream()
-                                                                    .map(id -> new TecnologiaResumen(
-                                                                            id,
-                                                                            tecnologiasMap.get(id)
-                                                                    ))
-                                                                    .toList()
-                                                    )));
+                    ordenar(capacidades, sortBy, direction);
+                    return mapearConTecnologias(capacidades);
                 });
     }
 
     @Override
-    public Flux<CapacidadListado> listarPorIds(List<Long> ids) {
-        return persistencePort.findByIds(ids)
-                .collectList()
-                .flatMapMany(capacidades -> {
-                    List<Long> tecnologiaIds = capacidades.stream()
-                            .flatMap(c -> c.tecnologiaIds().stream())
-                            .distinct()
-                            .toList();
+    public Flux<CapacidadListado> obtenerPorIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Flux.empty();
+        }
 
-                    return tecnologiaQueryPort.obtenerTecnologiasPorId(tecnologiaIds)
-                            .flatMapMany(tecnologiasMap ->
-                                    Flux.fromIterable(capacidades)
-                                            .map(capacidad ->
-                                                    new CapacidadListado(
-                                                            capacidad.id(),
-                                                            capacidad.nombre(),
-                                                            capacidad.tecnologiaIds().stream()
-                                                                    .map(id -> new TecnologiaResumen(
-                                                                            id,
-                                                                            tecnologiasMap.get(id)
-                                                                    ))
-                                                                    .toList()
-                                                    )));
-                });
+        return persistencePort.findAllByIdIn(ids)
+                .collectList()
+                .flatMapMany(this::mapearConTecnologias);
     }
 
-    private Mono<Void> validar(Capacidad c) {
+    private Mono<Capacidad> validar(Capacidad c) {
         if (c.tecnologiaIds() == null || c.tecnologiaIds().size() < 3)
-            return Mono.error(new BusinessException(
-                    TechnicalMessage.MINIMO_TECNOLOGIAS));
+            return Mono.error(new BusinessException(TechnicalMessage.MINIMO_TECNOLOGIAS));
 
         if (c.tecnologiaIds().size() > 20)
-            return Mono.error(new BusinessException(
-                    TechnicalMessage.MAXIMO_TECNOLOGIAS));
+            return Mono.error(new BusinessException(TechnicalMessage.MAXIMO_TECNOLOGIAS));
 
         if (new HashSet<>(c.tecnologiaIds()).size() != c.tecnologiaIds().size())
-            return Mono.error(new BusinessException(
-                    TechnicalMessage.TECNOLOGIAS_REPETIDAS));
+            return Mono.error(new BusinessException(TechnicalMessage.TECNOLOGIAS_REPETIDAS));
 
-        return Mono.empty();
+        return Mono.just(c);
+    }
+
+    private Mono<Capacidad> verificarDuplicidad(Capacidad c) {
+        return persistencePort.existsByNombre(c.nombre())
+                .flatMap(exists -> Boolean.TRUE.equals(exists)
+                        ? Mono.error(new BusinessException(TechnicalMessage.CAPACIDAD_DUPLICADA))
+                        : Mono.just(c)
+                );
+    }
+
+    private Mono<Capacidad> verificarTecnologiasExisten(Capacidad c) {
+        return tecnologiaQueryPort.existenTecnologias(c.tecnologiaIds())
+                .flatMap(existen -> Boolean.TRUE.equals(existen)
+                        ? Mono.just(c)
+                        : Mono.error(new BusinessException(TechnicalMessage.TECNOLOGIAS_NO_EXISTEN))
+                );
+    }
+
+    private void ordenar(List<Capacidad> capacidades, String sortBy, String direction) {
+        Comparator<Capacidad> comparator;
+
+        if ("cantidad".equalsIgnoreCase(sortBy)) {
+            comparator = Comparator.comparingInt(c -> c.tecnologiaIds().size());
+        } else {
+            comparator = Comparator.comparing(
+                    Capacidad::nombre,
+                    String.CASE_INSENSITIVE_ORDER
+            );
+        }
+
+        if ("desc".equalsIgnoreCase(direction)) {
+            comparator = comparator.reversed();
+        }
+
+        capacidades.sort(comparator);
+    }
+
+    private Flux<CapacidadListado> mapearConTecnologias(List<Capacidad> capacidades) {
+        List<Long> tecnologiaIds = capacidades.stream()
+                .flatMap(c -> c.tecnologiaIds().stream())
+                .distinct()
+                .toList();
+
+        return tecnologiaQueryPort.obtenerTecnologiasPorId(tecnologiaIds)
+                .flatMapMany(tecnologiasMap ->
+                        Flux.fromIterable(capacidades)
+                                .map(capacidad ->
+                                        new CapacidadListado(
+                                                capacidad.id(),
+                                                capacidad.nombre(),
+                                                capacidad.tecnologiaIds().stream()
+                                                        .map(id -> new TecnologiaResumen(
+                                                                id,
+                                                                tecnologiasMap.get(id)
+                                                        ))
+                                                        .toList()
+                                        )));
     }
 }

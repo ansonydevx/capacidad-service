@@ -12,5 +12,5 @@ public interface CapacidadPersistencePort {
     Mono<Boolean> existsByNombre(String nombre);
     Mono<Capacidad> save(Capacidad tecnologia);
     Flux<Capacidad> findAll(int page, int size);
-    Flux<Capacidad> findByIds(List<Long> ids);
+    Flux<Capacidad> findAllByIdIn(List<Long> ids);
 }

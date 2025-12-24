@@ -34,12 +34,11 @@ public class CapacidadHandler {
                 .flatMap(capacidadServicePort::registrar)
                 .flatMap(c -> ServerResponse
                         .status(HttpStatus.CREATED)
-                        .bodyValue(TechnicalMessage.TECNOLOGIA_CREADA.getMessage()));
+                        .bodyValue(c));
     }
 
     public Mono<ServerResponse> existen(ServerRequest request) {
         return request.bodyToMono(CapacidadExistsRequest.class)
-                .doOnNext(req -> log.info("IDs recibidos: {}", req.ids()))
                 .flatMap(req -> capacidadServicePort.existenPorIds(req.ids()))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
@@ -57,11 +56,12 @@ public class CapacidadHandler {
                 );
     }
 
-    public Mono<ServerResponse> listarPorIds(ServerRequest request) {
+    public Mono<ServerResponse> obtenerPorIds(ServerRequest request) {
         return request.bodyToMono(IdsRequest.class)
-                .flatMapMany(req -> capacidadServicePort.listarPorIds(req.ids()))
-                .collectList()
-                .flatMap(list ->
-                        ServerResponse.ok().bodyValue(list));
+                .flatMap(req -> ServerResponse.ok()
+                                .body(
+                                        capacidadServicePort.obtenerPorIds(req.ids()),
+                                        CapacidadListado.class
+                                ));
     }
 }
