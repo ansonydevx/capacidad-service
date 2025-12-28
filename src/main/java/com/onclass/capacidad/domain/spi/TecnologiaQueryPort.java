@@ -8,4 +8,6 @@ import java.util.Map;
 public interface TecnologiaQueryPort {
     Mono<Boolean> existenTecnologias(List<Long> tecnologiaIds);
     Mono<Map<Long, String>> obtenerTecnologiasPorId(List<Long> ids);
+
+    Mono<Void> eliminarTecnologias(List<Long> tecnologiaIds);
 }

@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -63,5 +64,17 @@ public class CapacidadHandler {
                                         capacidadServicePort.obtenerPorIds(req.ids()),
                                         CapacidadListado.class
                                 ));
+    }
+
+    public Mono<ServerResponse> eliminarPorIds(ServerRequest request) {
+        return request.bodyToMono(IdsRequest.class)
+                .flatMap(req -> capacidadServicePort.eliminarPorIds(req.ids()))
+                .then(ServerResponse.noContent().build())
+                .doOnError(ex -> log.error("Error al eliminar capacidades: {}", ex.getMessage(), ex))
+                .onErrorResume(ex ->
+                        ServerResponse
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .bodyValue(Map.of("error", ex.getMessage()))
+                );
     }
 }

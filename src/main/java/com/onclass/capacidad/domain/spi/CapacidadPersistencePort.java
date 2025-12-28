@@ -13,4 +13,10 @@ public interface CapacidadPersistencePort {
     Mono<Capacidad> save(Capacidad tecnologia);
     Flux<Capacidad> findAll(int page, int size);
     Flux<Capacidad> findAllByIdIn(List<Long> ids);
+
+    Mono<Void> deleteById(Long id);
+
+    Flux<Long> findTecnologiaIdsByCapacidadIds(List<Long> capacidadIds);
+    Mono<Long> countCapacidadesReferencingTecnologia(Long tecnologiaId);
+    Mono<Void> deleteRelacionesByCapacidadIds(List<Long> capacidadIds);
 }

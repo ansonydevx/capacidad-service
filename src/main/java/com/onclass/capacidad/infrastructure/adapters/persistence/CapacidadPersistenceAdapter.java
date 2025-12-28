@@ -86,6 +86,28 @@ public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
                 });
     }
 
+    @Override
+    public Mono<Void> deleteById(Long id) {
+        return capacidadRepository.deleteById(id);
+    }
+
+    @Override
+    public Flux<Long> findTecnologiaIdsByCapacidadIds(List<Long> capacidadIds) {
+        return capacidadTecnologiaRepository.findAllByCapacidadIdIn(capacidadIds)
+                .map(CapacidadTecnologiaEntity::getTecnologiaId)
+                .distinct();
+    }
+
+    @Override
+    public Mono<Long> countCapacidadesReferencingTecnologia(Long tecnologiaId) {
+        return capacidadTecnologiaRepository.countByTecnologiaId(tecnologiaId);
+    }
+
+    @Override
+    public Mono<Void> deleteRelacionesByCapacidadIds(List<Long> capacidadIds) {
+        return capacidadTecnologiaRepository.deleteByCapacidadIdIn(capacidadIds);
+    }
+
     private Capacidad mapearCapacidad(CapacidadEntity entity, Map<Long, Collection<Long>> relMap) {
         return new Capacidad(
                 entity.getId(),

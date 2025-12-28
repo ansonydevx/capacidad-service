@@ -20,5 +20,4 @@ public interface CapacidadRepository extends ReactiveCrudRepository<CapacidadEnt
             """)
     Flux<CapacidadEntity> findAllPaged(int size, long offset);
     Flux<CapacidadEntity> findAllByIdIn(List<Long> ids);
-    Flux<CapacidadEntity> findByIdIn(List<Long> ids);
 }
