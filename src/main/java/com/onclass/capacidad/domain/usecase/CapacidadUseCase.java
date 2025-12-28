@@ -8,6 +8,9 @@ import com.onclass.capacidad.domain.spi.CapacidadPersistencePort;
 import com.onclass.capacidad.domain.spi.TecnologiaQueryPort;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadListado;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.TecnologiaResumen;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.reactive.TransactionalOperator;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,10 +22,16 @@ public class CapacidadUseCase implements CapacidadServicePort {
 
     private final CapacidadPersistencePort persistencePort;
     private final TecnologiaQueryPort tecnologiaQueryPort;
+    private final TransactionalOperator tx;
 
-    public CapacidadUseCase(CapacidadPersistencePort persistencePort, TecnologiaQueryPort tecnologiaQueryPort) {
+    public CapacidadUseCase(
+            CapacidadPersistencePort persistencePort,
+            TecnologiaQueryPort tecnologiaQueryPort,
+            TransactionalOperator tx
+    ) {
         this.persistencePort = persistencePort;
         this.tecnologiaQueryPort = tecnologiaQueryPort;
+        this.tx = tx;
     }
 
     @Override
@@ -58,6 +67,24 @@ public class CapacidadUseCase implements CapacidadServicePort {
         return persistencePort.findAllByIdIn(ids)
                 .collectList()
                 .flatMapMany(this::mapearConTecnologias);
+    }
+
+    @Override
+    public Mono<Void> eliminarPorIds(List<Long> capacidadIds) {
+        if (capacidadIds == null || capacidadIds.isEmpty()) {
+            return Mono.empty();
+        }
+
+        return obtenerTecnologiasHuerfanas(capacidadIds)
+                .flatMap(tecnologiasHuerfanas ->
+                        persistencePort.deleteRelacionesByCapacidadIds(capacidadIds)
+                                .thenMany(Flux.fromIterable(capacidadIds)
+                                        .concatMap(persistencePort::deleteById)
+                                )
+                                .then()
+                                .as(tx::transactional)
+                                .then(tecnologiaQueryPort.eliminarTecnologias(tecnologiasHuerfanas))
+                );
     }
 
     private Mono<Capacidad> validar(Capacidad c) {
@@ -128,5 +155,16 @@ public class CapacidadUseCase implements CapacidadServicePort {
                                                         ))
                                                         .toList()
                                         )));
+    }
+
+    private Mono<List<Long>> obtenerTecnologiasHuerfanas(List<Long> capacidadIds) {
+        return persistencePort.findTecnologiaIdsByCapacidadIds(capacidadIds)
+                .flatMap(tecnologiaId ->
+                        persistencePort.countCapacidadesReferencingTecnologia(tecnologiaId)
+                                .filter(count -> count <= 1)
+                                .map(count -> tecnologiaId)
+                )
+                .distinct()
+                .collectList();
     }
 }

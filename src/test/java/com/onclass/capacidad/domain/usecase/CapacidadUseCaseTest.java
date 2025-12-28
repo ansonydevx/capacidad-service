@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.mockito.Mockito;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -25,14 +26,21 @@ class CapacidadUseCaseTest {
     private CapacidadPersistencePort persistencePort;
     private TecnologiaQueryPort tecnologiaQueryPort;
     private CapacidadUseCase useCase;
+    private TransactionalOperator tx;
 
     @BeforeEach
     void setup() {
         persistencePort = Mockito.mock(CapacidadPersistencePort.class);
         tecnologiaQueryPort = Mockito.mock(TecnologiaQueryPort.class);
+        tx = Mockito.mock(TransactionalOperator.class);
+
+        when(tx.transactional(Mockito.<Mono<?>>any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
         useCase = new CapacidadUseCase(
                 persistencePort,
-                tecnologiaQueryPort);
+                tecnologiaQueryPort,
+                tx);
     }
 
     @Test
@@ -200,5 +208,53 @@ class CapacidadUseCaseTest {
                     assertEquals("Java", c.tecnologias().get(0).nombre());
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void deberiaEliminarCapacidadesYTecnologiasHuerfanas() {
+        List<Long> capacidadIds = List.of(1L, 2L);
+
+        when(persistencePort.findTecnologiaIdsByCapacidadIds(capacidadIds))
+                .thenReturn(Flux.just(10L, 20L));
+
+        when(persistencePort.countCapacidadesReferencingTecnologia(anyLong()))
+                .thenReturn(Mono.just(1L));
+
+        when(persistencePort.deleteRelacionesByCapacidadIds(capacidadIds))
+                .thenReturn(Mono.empty());
+
+        when(persistencePort.deleteById(anyLong()))
+                .thenReturn(Mono.empty());
+
+        when(tecnologiaQueryPort.eliminarTecnologias(List.of(10L, 20L)))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.eliminarPorIds(capacidadIds))
+                .verifyComplete();
+    }
+
+    @Test
+    void noDebeEliminarTecnologiasSiNoSonHuerfanas() {
+        List<Long> capacidadIds = List.of(1L);
+
+        when(persistencePort.findTecnologiaIdsByCapacidadIds(capacidadIds))
+                .thenReturn(Flux.just(99L));
+
+        when(persistencePort.countCapacidadesReferencingTecnologia(99L))
+                .thenReturn(Mono.just(2L));
+
+        when(persistencePort.deleteRelacionesByCapacidadIds(capacidadIds))
+                .thenReturn(Mono.empty());
+
+        when(persistencePort.deleteById(anyLong()))
+                .thenReturn(Mono.empty());
+
+        when(tecnologiaQueryPort.eliminarTecnologias(List.of()))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.eliminarPorIds(capacidadIds))
+                .verifyComplete();
+
+        verify(tecnologiaQueryPort).eliminarTecnologias(List.of());
     }
 }

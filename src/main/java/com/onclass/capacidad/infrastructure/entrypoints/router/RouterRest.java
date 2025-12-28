@@ -38,6 +38,12 @@ public class RouterRest {
                     method = RequestMethod.POST,
                     beanClass = CapacidadHandler.class,
                     beanMethod = "obtenerPorIds"
+            ),
+            @RouterOperation(
+                    path = "/capacidades/delete-by-ids",
+                    method = RequestMethod.POST,
+                    beanClass = CapacidadHandler.class,
+                    beanMethod = "eliminarPorIds"
             )
     })
     public RouterFunction<ServerResponse> routerFunction(CapacidadHandler handler) {
@@ -46,6 +52,7 @@ public class RouterRest {
                 .GET("/capacidades", handler::listar)
                 .POST("/capacidades/exists", handler::existen)
                 .POST("/capacidades/by-ids", handler::obtenerPorIds)
+                .POST("/capacidades/delete-by-ids", handler::eliminarPorIds)
                 .build();
     }
 }

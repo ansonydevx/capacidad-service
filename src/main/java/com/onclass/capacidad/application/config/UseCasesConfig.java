@@ -11,6 +11,7 @@ import com.onclass.capacidad.infrastructure.adapters.persistence.repository.Capa
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 @Configuration
 @RequiredArgsConstructor
@@ -19,6 +20,7 @@ public class UseCasesConfig {
     private final CapacidadRepository capacidadRepository;
     private final CapacidadTecnologiaRepository capacidadTecnologiaRepository;
     private final CapacidadEntityMapper capacidadEntityMapper;
+    private final TransactionalOperator transactionalOperator;
 
     @Bean
     public CapacidadPersistencePort capacidadPersistencePort() {
@@ -31,6 +33,6 @@ public class UseCasesConfig {
             CapacidadPersistencePort capacidadPersistencePort,
             TecnologiaQueryPort tecnologiaQueryPort
     ) {
-        return new CapacidadUseCase(capacidadPersistencePort, tecnologiaQueryPort);
+        return new CapacidadUseCase(capacidadPersistencePort, tecnologiaQueryPort, transactionalOperator);
     }
 }

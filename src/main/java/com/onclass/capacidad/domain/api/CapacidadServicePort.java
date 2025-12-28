@@ -18,4 +18,6 @@ public interface CapacidadServicePort {
             String direction
     );
     Flux<CapacidadListado> obtenerPorIds(List<Long> ids);
+
+    Mono<Void> eliminarPorIds(List<Long> ids);
 }
