@@ -77,4 +77,16 @@ public class CapacidadHandler {
                                 .bodyValue(Map.of("error", ex.getMessage()))
                 );
     }
+
+    public Mono<ServerResponse> contarTecnologias(ServerRequest request) {
+        return request.bodyToMono(IdsRequest.class)
+                .flatMap(req ->
+                        capacidadServicePort.contarTecnologiasPorCapacidadIds(req.ids())
+                )
+                .flatMap(total ->
+                        ServerResponse.ok()
+                                .bodyValue(total)
+                );
+
+    }
 }

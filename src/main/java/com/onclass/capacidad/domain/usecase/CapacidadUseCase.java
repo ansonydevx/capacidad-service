@@ -87,6 +87,16 @@ public class CapacidadUseCase implements CapacidadServicePort {
                 );
     }
 
+    @Override
+    public Mono<Integer> contarTecnologiasPorCapacidadIds(List<Long> capacidadIds) {
+        return persistencePort
+                .findAllByIdIn(capacidadIds)
+                .flatMapIterable(Capacidad::tecnologiaIds)
+                .distinct()
+                .count()
+                .map(Long::intValue);
+    }
+
     private Mono<Capacidad> validar(Capacidad c) {
         if (c.tecnologiaIds() == null || c.tecnologiaIds().size() < 3)
             return Mono.error(new BusinessException(TechnicalMessage.MINIMO_TECNOLOGIAS));

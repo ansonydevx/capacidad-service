@@ -53,6 +53,7 @@ public class RouterRest {
                 .POST("/capacidades/exists", handler::existen)
                 .POST("/capacidades/by-ids", handler::obtenerPorIds)
                 .POST("/capacidades/delete-by-ids", handler::eliminarPorIds)
+                .POST("/capacidades/contar-tecnologias", handler::contarTecnologias)
                 .build();
     }
 }
