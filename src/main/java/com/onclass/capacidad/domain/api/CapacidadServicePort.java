@@ -20,4 +20,5 @@ public interface CapacidadServicePort {
     Flux<CapacidadListado> obtenerPorIds(List<Long> ids);
 
     Mono<Void> eliminarPorIds(List<Long> ids);
+    Mono<Integer> contarTecnologiasPorCapacidadIds(List<Long> capacidadIds);
 }
