@@ -4,4 +4,4 @@ import java.util.List;
 
 public record TecnologiaExistsRequest(
         List<Long> ids
-) { }
+) {}

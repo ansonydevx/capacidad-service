@@ -11,7 +11,6 @@ public interface CapacidadTecnologiaRepository extends ReactiveCrudRepository<Ca
     Flux<CapacidadTecnologiaEntity> findAllByCapacidadIdIn(List<Long> capacidadIds);
     Flux<CapacidadTecnologiaEntity> findByCapacidadId(Long capacidadId);
 
-    Flux<CapacidadTecnologiaEntity> findByTecnologiaId(Long tecnologiaId);
     Mono<Long> countByTecnologiaId(Long tecnologiaId);
     Mono<Void> deleteByCapacidadIdIn(List<Long> capacidadIds);
 }

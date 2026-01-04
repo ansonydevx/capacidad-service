@@ -8,9 +8,7 @@ import com.onclass.capacidad.domain.spi.CapacidadPersistencePort;
 import com.onclass.capacidad.domain.spi.TecnologiaQueryPort;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadListado;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.TecnologiaResumen;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.reactive.TransactionalOperator;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

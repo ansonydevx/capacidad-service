@@ -1,7 +1,6 @@
 package com.onclass.capacidad.infrastructure.entrypoints.handler;
 
 import com.onclass.capacidad.domain.api.CapacidadServicePort;
-import com.onclass.capacidad.domain.enums.TechnicalMessage;
 import com.onclass.capacidad.domain.model.Capacidad;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadDTO;
 import com.onclass.capacidad.infrastructure.entrypoints.dto.CapacidadExistsRequest;
@@ -15,7 +14,6 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -87,6 +85,5 @@ public class CapacidadHandler {
                         ServerResponse.ok()
                                 .bodyValue(total)
                 );
-
     }
 }

@@ -11,12 +11,7 @@ public interface CapacidadServicePort {
     
     Mono<Capacidad> registrar(Capacidad tecnologia);
     Mono<Boolean> existenPorIds(List<Long> ids);
-    Flux<CapacidadListado> listar(
-            int page,
-            int size,
-            String sortBy,
-            String direction
-    );
+    Flux<CapacidadListado> listar(int page, int size, String sortBy, String direction);
     Flux<CapacidadListado> obtenerPorIds(List<Long> ids);
 
     Mono<Void> eliminarPorIds(List<Long> ids);

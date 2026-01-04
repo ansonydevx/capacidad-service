@@ -44,6 +44,12 @@ public class RouterRest {
                     method = RequestMethod.POST,
                     beanClass = CapacidadHandler.class,
                     beanMethod = "eliminarPorIds"
+            ),
+            @RouterOperation(
+                    path = "/capacidades/contar-tecnologias",
+                    method = RequestMethod.POST,
+                    beanClass = CapacidadHandler.class,
+                    beanMethod = "contarTecnologias"
             )
     })
     public RouterFunction<ServerResponse> routerFunction(CapacidadHandler handler) {

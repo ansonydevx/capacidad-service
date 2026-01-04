@@ -4,4 +4,4 @@ import java.util.List;
 
 public record CapacidadExistsRequest(
         List<Long> ids
-) { }
+) {}
