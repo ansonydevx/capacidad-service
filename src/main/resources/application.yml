@@ -6,11 +6,16 @@ services:
     base-url: http://localhost:8081
 
 spring:
-  name: capacidad-service
+  application:
+    name: capacidad-service
   r2dbc:
     url: r2dbc:mysql://localhost:3306/capacidades_db
     username: root
     password: root
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
 
 springdoc:
   api-docs:
