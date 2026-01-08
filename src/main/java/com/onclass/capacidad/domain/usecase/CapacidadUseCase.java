@@ -12,24 +12,19 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class CapacidadUseCase implements CapacidadServicePort {
 
     private final CapacidadPersistencePort persistencePort;
     private final TecnologiaQueryPort tecnologiaQueryPort;
-    private final TransactionalOperator tx;
 
     public CapacidadUseCase(
             CapacidadPersistencePort persistencePort,
-            TecnologiaQueryPort tecnologiaQueryPort,
-            TransactionalOperator tx
+            TecnologiaQueryPort tecnologiaQueryPort
     ) {
         this.persistencePort = persistencePort;
         this.tecnologiaQueryPort = tecnologiaQueryPort;
-        this.tx = tx;
     }
 
     @Override
@@ -52,7 +47,7 @@ public class CapacidadUseCase implements CapacidadServicePort {
                 .collectList()
                 .flatMapMany(capacidades -> {
                     ordenar(capacidades, sortBy, direction);
-                    return mapearConTecnologias(capacidades);
+                    return listarConTecnologias(capacidades);
                 });
     }
 
@@ -64,7 +59,7 @@ public class CapacidadUseCase implements CapacidadServicePort {
 
         return persistencePort.findAllByIdIn(ids)
                 .collectList()
-                .flatMapMany(this::mapearConTecnologias);
+                .flatMapMany(this::listarConTecnologias);
     }
 
     @Override
@@ -80,7 +75,6 @@ public class CapacidadUseCase implements CapacidadServicePort {
                                         .concatMap(persistencePort::deleteById)
                                 )
                                 .then()
-                                .as(tx::transactional)
                                 .then(tecnologiaQueryPort.eliminarTecnologias(tecnologiasHuerfanas))
                 );
     }
@@ -143,26 +137,29 @@ public class CapacidadUseCase implements CapacidadServicePort {
         capacidades.sort(comparator);
     }
 
-    private Flux<CapacidadListado> mapearConTecnologias(List<Capacidad> capacidades) {
+    private Flux<CapacidadListado> listarConTecnologias(List<Capacidad> capacidades) {
         List<Long> tecnologiaIds = capacidades.stream()
                 .flatMap(c -> c.tecnologiaIds().stream())
                 .distinct()
                 .toList();
 
         return tecnologiaQueryPort.obtenerTecnologiasPorId(tecnologiaIds)
-                .flatMapMany(tecnologiasMap ->
-                        Flux.fromIterable(capacidades)
-                                .map(capacidad ->
-                                        new CapacidadListado(
-                                                capacidad.id(),
-                                                capacidad.nombre(),
-                                                capacidad.tecnologiaIds().stream()
-                                                        .map(id -> new TecnologiaResumen(
-                                                                id,
-                                                                tecnologiasMap.get(id)
-                                                        ))
-                                                        .toList()
-                                        )));
+                .flatMapMany(tecnologiasPorId ->
+                    Flux.fromIterable(capacidades)
+                            .map(capacidad -> toListado(capacidad, tecnologiasPorId))
+                );
+    }
+
+    private CapacidadListado toListado(Capacidad capacidad, Map<Long, String> tecnologiasPorId) {
+        List<TecnologiaResumen> tecnologias = capacidad.tecnologiaIds().stream()
+                .map(id -> new TecnologiaResumen(id, tecnologiasPorId.get(id)))
+                .toList();
+
+        return new CapacidadListado(
+                capacidad.id(),
+                capacidad.nombre(),
+                tecnologias
+        );
     }
 
     private Mono<List<Long>> obtenerTecnologiasHuerfanas(List<Long> capacidadIds) {

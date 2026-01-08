@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.mockito.Mockito;
-import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -26,21 +25,15 @@ class CapacidadUseCaseTest {
     private CapacidadPersistencePort persistencePort;
     private TecnologiaQueryPort tecnologiaQueryPort;
     private CapacidadUseCase useCase;
-    private TransactionalOperator tx;
 
     @BeforeEach
     void setup() {
         persistencePort = Mockito.mock(CapacidadPersistencePort.class);
         tecnologiaQueryPort = Mockito.mock(TecnologiaQueryPort.class);
-        tx = Mockito.mock(TransactionalOperator.class);
-
-        when(tx.transactional(Mockito.<Mono<?>>any()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         useCase = new CapacidadUseCase(
                 persistencePort,
-                tecnologiaQueryPort,
-                tx);
+                tecnologiaQueryPort);
     }
 
     @Test

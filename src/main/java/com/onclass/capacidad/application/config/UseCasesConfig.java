@@ -33,6 +33,6 @@ public class UseCasesConfig {
             CapacidadPersistencePort capacidadPersistencePort,
             TecnologiaQueryPort tecnologiaQueryPort
     ) {
-        return new CapacidadUseCase(capacidadPersistencePort, tecnologiaQueryPort, transactionalOperator);
+        return new CapacidadUseCase(capacidadPersistencePort, tecnologiaQueryPort);
     }
 }

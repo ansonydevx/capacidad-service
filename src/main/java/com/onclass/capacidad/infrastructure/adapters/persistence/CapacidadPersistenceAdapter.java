@@ -37,11 +37,18 @@ public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
         return capacidadRepository.save(mapper.toEntity(capacidad))
                 .flatMap(saved ->
                         Flux.fromIterable(capacidad.tecnologiaIds())
-                                .flatMap(id ->
-                                        capacidadTecnologiaRepository.save(
-                                                new CapacidadTecnologiaEntity(saved.getId(), id)))
+                                .flatMap(id -> capacidadTecnologiaRepository.save(
+                                        new CapacidadTecnologiaEntity(saved.getId(), id)
+                                ))
                                 .then(Mono.just(
-                                        new Capacidad(saved.getId(), saved.getNombre(), saved.getDescripcion(), capacidad.tecnologiaIds()))));
+                                        new Capacidad(
+                                                saved.getId(),
+                                                saved.getNombre(),
+                                                saved.getDescripcion(),
+                                                capacidad.tecnologiaIds()
+                                        )
+                                ))
+                );
     }
 
     @Override
@@ -113,8 +120,7 @@ public class CapacidadPersistenceAdapter implements CapacidadPersistencePort {
                 entity.getId(),
                 entity.getNombre(),
                 entity.getDescripcion(),
-                new ArrayList<>(relMap.getOrDefault(entity.getId(), List.of())
-                )
+                new ArrayList<>(relMap.getOrDefault(entity.getId(), List.of()))
         );
     }
 }

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
@@ -22,6 +23,7 @@ import java.util.Map;
 public class CapacidadHandler {
 
     private final CapacidadServicePort capacidadServicePort;
+    private final TransactionalOperator tx;
 
     public Mono<ServerResponse> registrar(ServerRequest request) {
         return request.bodyToMono(CapacidadDTO.class)
@@ -49,41 +51,32 @@ public class CapacidadHandler {
         String direction = request.queryParam("direction").orElse("asc");
 
         return ServerResponse.ok()
-                .body(
-                        capacidadServicePort.listar(page, size, sortBy, direction),
-                        CapacidadListado.class
-                );
+                .body(capacidadServicePort.listar(page, size, sortBy, direction), CapacidadListado.class);
     }
 
     public Mono<ServerResponse> obtenerPorIds(ServerRequest request) {
         return request.bodyToMono(IdsRequest.class)
                 .flatMap(req -> ServerResponse.ok()
-                                .body(
-                                        capacidadServicePort.obtenerPorIds(req.ids()),
-                                        CapacidadListado.class
-                                ));
+                                .body(capacidadServicePort.obtenerPorIds(req.ids()), CapacidadListado.class));
     }
 
     public Mono<ServerResponse> eliminarPorIds(ServerRequest request) {
         return request.bodyToMono(IdsRequest.class)
-                .flatMap(req -> capacidadServicePort.eliminarPorIds(req.ids()))
+                .flatMap(req ->
+                        capacidadServicePort.eliminarPorIds(req.ids())
+                                .as(tx::transactional)
+                                .doOnError(ex -> log.error("Error eliminando capacidades", ex))
+                )
                 .then(ServerResponse.noContent().build())
-                .doOnError(ex -> log.error("Error al eliminar capacidades: {}", ex.getMessage(), ex))
                 .onErrorResume(ex ->
-                        ServerResponse
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .bodyValue(Map.of("error", ex.getMessage()))
+                        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .bodyValue(ex.getMessage())
                 );
     }
 
     public Mono<ServerResponse> contarTecnologias(ServerRequest request) {
         return request.bodyToMono(IdsRequest.class)
-                .flatMap(req ->
-                        capacidadServicePort.contarTecnologiasPorCapacidadIds(req.ids())
-                )
-                .flatMap(total ->
-                        ServerResponse.ok()
-                                .bodyValue(total)
-                );
+                .flatMap(req -> capacidadServicePort.contarTecnologiasPorCapacidadIds(req.ids()))
+                .flatMap(total -> ServerResponse.ok().bodyValue(total));
     }
 }
